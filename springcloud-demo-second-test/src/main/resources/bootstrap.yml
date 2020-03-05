@@ -1,0 +1,18 @@
+#eureka
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+spring:
+  application:
+    name: second-test
+  cloud:
+    config:
+      profile: test
+      discovery:
+        enabled: true
+        service-id: CONFIG
+      name: second
+ribbon:
+  eureka:
+    enabled: true

@@ -1,0 +1,133 @@
+
+统一配置中心有什么功能？
+
+1.可以从远程仓库中获取配置文件 配置url+端口/ xxx-xxx.yml
+
+2.检查配置文件的格式是否正确，当配置中心的文件是错误的时候，访问配置中心的文件会报错
+
+3.自动刷新
+
+统一配置中心server怎么搭建？
+
+1.统一配置中心需要注册到注册中心当中,因此首先需要引入注册中心的客户端依赖
+
+2.引入统一配置中心的server端依赖
+
+3.使用注解 @EnableDiscoveryClient  @EnableConfigServer
+
+4.编写配置文件 （远程仓库地址 用户名 密码）
+
+
+配置中心客户端
+
+1.配置中心客户端会根据server-id去eureka中找配置中心,如果找不到会把 http://localhost:8888 当成配置中心
+
+2.客户端的配置文件需要改成bootstrap.yml
+
+
+统一配置中心自动刷新
+
+1.原理在github上修改配置文件将会触发webhook，webhook配置的url为配置中中心的/bus/refresh的url,配置中心将记录写入rabbitmq上,
+通知其他客户端修改配置内容
+
+2.客户端配置注解
+
+
+
+-----------------------------------------------------------------------------------------------------------------
+
+本地搭建配置中心大全:
+
+配置中心的配置文件可以放在远程git仓库,可以放在本地的目录中
+
+放在本地目录中的一些坑:
+
+1.首先怎么配置可以放在本地中？
+
+我的配置文件是这样
+
+server:
+  port: 8079
+#eureka
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+spring:
+  profiles:
+    active: dev
+  application:
+    name: config
+  rabbitmq:
+    host: 114.67.176.63
+    port: 5672
+    username: root
+    password: root
+  cloud:
+    config:
+      server:
+        native:
+          search-locations: classpath:profile/dev
+          default-label: master
+#          search-locations: file:D:\location-config
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+
+需要注意的点:
+
+spring.profiles.active=native
+
+注意这里是一定要是用native的，我之前的理解是我创建一个文件application-dev.yml 然后改成spring.profiles.active=dev应该就可以了,
+但是我发现竟然会报这个错
+If you are using the git profile, you need to set a Git URI in your configuration.
+If you are using a native profile and have spring.cloud.config.server.bootstrap=true,
+you need to use a composite configuration.
+真的是坑爹坑到飞起
+
+
+spring.cloud.config.server.native.search-locations=file:本地文件夹目录
+
+注意这里使用file: 也可以使用classpath: 但是有一个区别,使用file: 的话 调用刷新的接口是可以看到配置文件刷新的，
+但是用classpath:发现调用刷新方法刷新不了,实验了两次,看到现象就是这样,
+至于如何刷新 请求这个/actuator/refresh(我使用的springcloud的版本是Hoxton.SR1,要这个的前提是你要导入下面这个依赖,
+并且配置要配置下面这段,默认这个暴露的是health  info)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+
+本地修改配置文件,不能做到修改完配置文件之后,立刻通知应用重新加载最新的配置文件,除非自己编写一个程序监控文件，然后文件修改之后，
+来请求/actuator/refresh这个接口做到自动刷新
+
+以上只能做到刷新单个应用刷新,十分的鸡肋
+
+-------------------------------------------------------------------
+
+下面的做法是通过访问 config中心的接口做到自动更新所有应用的配置信息
+
+http://localhost:8079/actuator/bus-refresh
+
+在github上面配置webhook的时候发现github上面的webhook是带有payload的,配置/actuator/bus-refresh会报400的错误
+因此参考这篇文章 使用filter拦截 /bus-refresh为末尾的请求,将body的内容设置为空,这样就不会报错为400,
+网上说使用/monitor在配置中心导入下面依赖,我试了一下发现不行,另外提一点在github上面配置webhook是要github能请求到配置中心,
+因此本地搭建的话需要使用内网穿透工具 花生壳 ngrok 自己搭建内网穿透工具等等
+导入
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-config-monitor</artifactId>
+</dependency>
+
+
+
+
+
