@@ -13,6 +13,15 @@ spring:
         enabled: true
         service-id: CONFIG
       name: second
+  sleuth:
+    sampler:
+      rate: 10
+    web:
+      client:
+        enabled: true
+  zipkin:
+    base-url: http://114.67.176.63:9411/
+    enabled: true
 ribbon:
   eureka:
     enabled: true

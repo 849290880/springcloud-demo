@@ -13,7 +13,16 @@ spring:
         enabled: true
         service-id: CONFIG
       name: zuul
+  sleuth:
+    sampler:
+      rate: 10
+    web:
+      client:
+        enabled: true
+  zipkin:
+    base-url: http://114.67.176.63:9411/
+    enabled: true
+
 logging:
   level:
     com.example.springclouddemozuul.filter: debug
-
