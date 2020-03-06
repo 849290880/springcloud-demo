@@ -13,4 +13,6 @@ spring:
         enabled: true
         service-id: CONFIG
       name: test
-
+logging:
+  level:
+    com.example.springclouddemotest.api: debug
