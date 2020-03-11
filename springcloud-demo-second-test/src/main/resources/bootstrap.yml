@@ -31,3 +31,6 @@ logging:
       springframework:
         cloud:
           openfeign: debug
+feign:
+  hystrix:
+    enabled: true
